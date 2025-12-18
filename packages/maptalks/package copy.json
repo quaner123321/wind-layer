@@ -1,10 +1,9 @@
 {
-  "name": "@andy123321/wind-gl-core",
-  "version": "2.0.2-custom.5",
-  "description": "leaflet wind",
+  "name": "@andy123321/maptalks-wind",
+  "version": "2.0.4-custom.6",
+  "description": "maptalks wind",
   "keywords": [
-    "weather",
-    "wind",
+    "maptalks",
     "3d",
     "webgl",
     "map",
@@ -13,11 +12,11 @@
   ],
   "author": "andy123321 <1197840434@qq.com>",
   "license": "MIT",
-  "main": "dist/wind-gl-core.js",
-  "module": "dist/wind-gl-core.esm.js",
-  "unpkg": "dist/wind-gl-core.js",
-  "commonjs": "dist/wind-gl-core.cjs.js",
-  "namespace": "WindGl",
+  "main": "dist/maptalks-wind.js",
+  "module": "dist/maptalks-wind.esm.js",
+  "unpkg": "dist/maptalks-wind.js",
+  "commonjs": "dist/maptalks-wind.cjs.js",
+  "namespace": "mtkWind",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
@@ -30,18 +29,18 @@
       "types": "./dist/index.d.ts",
       "node": {
         "import": {
-          "production": "./dist/wind-gl-core.esm.js",
-          "development": "./dist/wind-gl-core.esm.js",
-          "default": "./dist/wind-gl-core.esm.js"
+          "production": "./dist/maptalks-wind.esm.js",
+          "development": "./dist/maptalks-wind.esm.js",
+          "default": "./dist/maptalks-wind.esm.js"
         },
         "require": {
-          "production": "./dist/wind-gl-core.cjs.js",
-          "development": "./dist/wind-gl-core.cjs.js",
-          "default": "./dist/wind-gl-core.cjs.js"
+          "production": "./dist/maptalks-wind.cjs.js",
+          "development": "./dist/maptalks-wind.cjs.js",
+          "default": "./dist/maptalks-wind.cjs.js"
         }
       },
-      "import": "./dist/wind-gl-core.esm.js",
-      "require": "./dist/wind-gl-core.cjs.js"
+      "import": "./dist/maptalks-wind.esm.js",
+      "require": "./dist/maptalks-wind.cjs.js"
     },
     "./dist/*": "./dist/*",
     "./package.json": "./package.json"
@@ -51,7 +50,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/quaner123321/wind-layer.git",
-    "directory": "packages/gl-core"
+    "directory": "packages/maptalks"
   },
   "scripts": {
     "api": "typedoc",
@@ -68,16 +67,24 @@
   "bugs": {
     "url": "https://github.com/sakitam-fdd/wind-layer/issues"
   },
-  "homepage": "https://github.com/sakitam-fdd/wind-layer#readme",
   "dependencies": {
     "@sakitam-gis/vis-engine": "^1.5.3",
-    "earcut": "^2.2.4",
-    "wind-gl-worker": "^2.0.2"
+    "@mapbox/geojson-rewind": "^0.5.2",
+    "wind-core": "^1.1.8",
+
+    "wind-gl-core": "workspace:*"
+
+
+    "@andy123321/wind-gl-core": "^2.0.2-custom.2"
+  },
+  "peerDependencies": {
+    "maptalks": ">=0.49.0"
   },
   "devDependencies": {
-    "@types/earcut": "^2.1.4"
+    "maptalks": "^1.0.0-rc.10"
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "homepage": "https://github.com/quaner123321/wind-layer#readme"
 }

@@ -21,6 +21,10 @@ import type TileID from '../tile/TileID';
 import MaskPass from './pass/mask';
 import ArrowComposePass from './pass/arrow/compose';
 import ArrowPass from './pass/arrow/arrow';
+import BarbComposePass from './pass/barb/compose';
+import BarbPass from './pass/barb/barb';
+import NumComposePass from './pass/number/compose';
+import NumPass from './pass/number/num';
 // import ComposeRenderPass from './pass/particles/compose-test';
 
 export interface UserOptions {
@@ -411,9 +415,152 @@ export default class BaseLayer {
       });
       this.renderPipeline?.addPass(composePass);
       this.renderPipeline?.addPass(arrowPass);
+    } else if (this.options.renderType === RenderType.barb) {
+      const composePass = new BarbComposePass('BarbComposePass', this.renderer, {
+        id: utils.uid('BarbComposePass'),
+        bandType,
+        source: this.source,
+        renderFrom: this.options.renderFrom ?? RenderFrom.r,
+        stencilConfigForOverlap: this.stencilConfigForOverlap.bind(this),
+        getTileProjSize: this.options.getTileProjSize,
+      });
+      const barbPass = new BarbPass('BarbPass', this.renderer, {
+        bandType,
+        source: this.source,
+        texture: composePass.textures.current,
+        textureNext: composePass.textures.next,
+        getPixelsToUnits: this.options.getPixelsToUnits,
+        getGridTiles: this.options.getGridTiles,
+        maskPass: this.#maskPass,
+      });
+      this.renderPipeline?.addPass(composePass);
+      this.renderPipeline?.addPass(barbPass);
+    } else if (this.options.renderType === RenderType.number) {
+      const composePass = new NumComposePass('NumComposePass', this.renderer, {
+        id: utils.uid('NumComposePass'),
+        bandType,
+        source: this.source,
+        renderFrom: this.options.renderFrom ?? RenderFrom.r,
+        stencilConfigForOverlap: this.stencilConfigForOverlap.bind(this),
+        getTileProjSize: this.options.getTileProjSize,
+      });
+      const numPass = new NumPass('NumPass', this.renderer, {
+        bandType,
+        source: this.source,
+        texture: composePass.textures.current,
+        textureNext: composePass.textures.next,
+        getPixelsToUnits: this.options.getPixelsToUnits,
+        getGridTiles: this.options.getGridTiles,
+        maskPass: this.#maskPass,
+        numberTexture: this.createNumberImage()
+      });
+      this.renderPipeline?.addPass(composePass);
+      this.renderPipeline?.addPass(numPass);
     }
   }
 
+  // 可以使用Canvas创建高质量的数字图片
+  // 修改 createNumberImage 方法，创建更简单的数字纹理
+  createNumberImage() {
+    try {
+        console.log('Creating number image...');
+        
+        const canvas = document.createElement('canvas');
+        // 使用更合适的尺寸
+        canvas.width = 1000;
+        canvas.height = 100;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('Canvas context not available');
+            return '';
+        }
+        
+        // 使用透明背景
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 设置字体
+        ctx.font = 'bold 80px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // 绘制白色数字（纹理将使用alpha通道）
+        ctx.fillStyle = '#FFFFFF';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        
+        const cols = 10;
+        const cellWidth = canvas.width / cols;
+        
+        for (let i = 0; i < cols; i++) {
+            const x = i * cellWidth + cellWidth / 2;
+            const y = canvas.height / 2;
+            
+            // 描边增加清晰度
+            ctx.strokeText(i.toString(), x, y);
+            ctx.fillText(i.toString(), x, y);
+        }
+        
+        console.log('Number image created:', canvas.width, 'x', canvas.height);
+        
+        // 创建数据URL
+        const dataURL = canvas.toDataURL('image/png');
+        
+        // 调试：显示生成的图片
+        const debugImg = new Image();
+        debugImg.src = dataURL;
+        debugImg.onload = () => {
+            console.log('Debug image loaded, size:', debugImg.width, 'x', debugImg.height);
+            
+            // 可选：显示在页面上用于调试
+            // debugImg.style.position = 'fixed';
+            // debugImg.style.top = '10px';
+            // debugImg.style.left = '10px';
+            // debugImg.style.zIndex = '9999';
+            // debugImg.style.border = '2px solid red';
+            // document.body.appendChild(debugImg);
+        };
+        
+        return dataURL;
+    } catch (error) {
+        console.error('Error creating number image:', error);
+        return '';
+    }
+}
+createTestTexture() {
+    try {
+        console.log('Creating test texture...');
+        
+        // 创建一个 1x1 的白色像素
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, 1, 1);
+        
+        const texture = new Texture(this.renderer, {
+            data: canvas,
+            width: 1,
+            height: 1,
+            format: this.renderer.gl.RGBA,
+            type: this.renderer.gl.UNSIGNED_BYTE,
+            generateMipmaps: false,
+            minFilter: this.renderer.gl.NEAREST,
+            magFilter: this.renderer.gl.NEAREST,
+            wrapS: this.renderer.gl.CLAMP_TO_EDGE,
+            wrapT: this.renderer.gl.CLAMP_TO_EDGE,
+            name: 'testTexture',
+        });
+        
+        console.log('Test texture created');
+        return texture;
+    } catch (error) {
+        console.error('Error creating test texture:', error);
+        return null;
+    }
+}
   updateOptions(options: Partial<UserOptions>) {
     this.options = {
       ...this.options,
@@ -523,6 +670,18 @@ export default class BaseLayer {
       }
 
       if (this.options.renderType === RenderType.arrow) {
+        this.setSymbolSize(this.options.styleSpec?.size);
+        this.setSymbolSpace(createZoom(this.uid, zoom, 'space', this.options.styleSpec, clear));
+      }
+      if (this.options.renderType === RenderType.barb) {
+        this.setSymbolSize(this.options.styleSpec?.size);
+        this.setSymbolSpace(createZoom(this.uid, zoom, 'space', this.options.styleSpec, clear));
+      }
+      if (this.options.renderType === RenderType.number) {
+        // 设置更大的数字大小，例如 [64, 64] 或 [128, 128]
+        // this.setSymbolSize([128, 128]); // 原来可能是 [16, 16]
+        // this.setSymbolSpace(createZoom(this.uid, zoom, 'space', this.options.styleSpec, clear));
+
         this.setSymbolSize(this.options.styleSpec?.size);
         this.setSymbolSpace(createZoom(this.uid, zoom, 'space', this.options.styleSpec, clear));
       }
@@ -700,6 +859,16 @@ export default class BaseLayer {
         const arrow = this.renderPipeline?.getPass('ArrowPass');
         if (arrow) {
           arrow.setMaskPass(this.#maskPass);
+        }
+
+        const barb = this.renderPipeline?.getPass('BarbPass');
+        if (barb) {
+          barb.setMaskPass(this.#maskPass);
+        }
+
+        const num = this.renderPipeline?.getPass('NumPass');
+        if (num) {
+          num.setMaskPass(this.#maskPass);
         }
       }
 

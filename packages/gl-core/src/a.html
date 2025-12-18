@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字纹理可视化</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .canvas-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        canvas {
+            display: block;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: #f8f8f8;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas-container">
+        <canvas id="numberCanvas"></canvas>
+    </div>
+
+    <script>
+        function createNumberImage() {
+            const canvas = document.getElementById('numberCanvas');
+            canvas.width = 1000; // 10个数字，每个100像素宽
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return '';
+            
+            // 设置清晰的字体
+            ctx.font = 'bold 80px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // 绘制黑色背景
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制白色数字
+            ctx.fillStyle = '#ffffff';
+            const cellWidth = canvas.width / 10;
+            for (let i = 0; i < 10; i++) {
+                const x = i * cellWidth + cellWidth / 2;
+                const y = canvas.height / 2;
+                ctx.fillText(i.toString(), x, y);
+            }
+            
+            console.log('Created number texture:', canvas.width, 'x', canvas.height);
+            return canvas.toDataURL('image/png');
+        }
+
+        // 页面加载完成后执行
+        window.addEventListener('DOMContentLoaded', createNumberImage);
+    </script>
+</body>
+</html>

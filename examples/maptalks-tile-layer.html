@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map - Display a map</title>
+<link rel="stylesheet" href="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.css">
+<link rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+<style type="text/css">
+  html, body {
+    margin: 0;
+    height: 100%;
+    width: 100%
+  }
+  .container {
+    width: 100%;
+    height: 100%
+  }
+</style>
+<body>
+
+<div id="map" class="container"></div>
+<script src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.js"></script>
+<script src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.js"></script>
+<script src="../packages/maptalks/dist/maptalks-wind.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/@sakitam-gis/maptalks-wind/dist/maptalks-wind.js"></script> -->
+<script>
+  const map = new maptalks.Map('map', {
+    // center: [113.53450137499999, 34.44104525],
+    zoom: 2,
+    center: [34.371, 131.287].reverse(),
+    // zoom: 4
+    baseLayer: new maptalks.TileLayer('base', {
+      urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      // urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      subdomains: ['a', 'b', 'c', 'd'],
+    })
+  });
+
+  window.map = map;
+
+  mtkWind.configDeps(['https://unpkg.com/geotiff/dist-browser/geotiff.js']);
+
+  const tileSource = new mtkWind.TileSource('wind', {
+    tileSize: 256,
+    minZoom: 2,
+    maxZoom: 3,
+    roundZoom: true,
+    decodeType: mtkWind.DecodeType.imageWithExif,
+    wrapX: false,
+    url: 'http://localhost:5000/tiles_final/{z}/{x}/{y}/wind-surface.jpeg',
+  });
+  const color = {
+    wind: [[0,[98,113,183,255]],
+      [0.051,[57,97,159,255]],
+      [0.1,[74,148,169,255]],
+      [0.15,[77,141,123,255]],
+      [0.2,[83,165,83,255]],
+      [0.25,[53,159,53,255]],
+      [0.3,[167,157,81,255]],
+      [0.35,[159,127,58,255]],
+      [0.4,[161,108,92,255]],
+      [0.45,[129,58,78,255]],
+      [0.5,[175,80,136,255]],
+      [0.55,[117,74,147,255]],
+      [0.6,[109,97,163,255]],
+      [0.65,[68,105,141,255]],
+      [0.7,[92,144,152,255]],
+      [0.75,[125,68,165,255]],
+      [0.8,[231,215,215,256]],
+      [1.7,[219,212,135,256]],
+      [1.8,[205,202,112,256]],
+      [1.9,[128,128,128,255]]]
+  };
+
+  const interpolateColor = color.wind.reduce((result, item, key) => result.concat(item[0] - 0/*273.15*/, 'rgba(' + item[1].join(',') + ')'), []);
+
+  const fill = new mtkWind.Layer('fill', tileSource, {
+    wireframe: true,
+    styleSpec: {
+      'fill-color': [
+        'interpolate',
+        ['linear'],
+        ['get', 'value'],
+        ...interpolateColor
+      ],
+      'opacity': 0.6
+    },
+    renderFrom: mtkWind.RenderFrom.rg,
+    widthSegments: 256,
+    heightSegments: 256,
+    displayRange: [0, 255],
+    renderType: mtkWind.RenderType.colorize,
+    picking: true,
+    // mask: {
+    //   data: clip,
+    //   // type: mapboxWind.MaskType.outside,
+    //   type: mapboxWind.MaskType.inside, // 默认是 inside，即只显示范围内的
+    // }
+  });
+
+  
+  map.addLayer(fill);
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
-  "name": "@sakitam-gis/maptalks-wind",
-  "version": "2.0.4",
+  "name": "@andy123321/maptalks-wind",
+  "version": "2.0.4-custom.10",
   "description": "maptalks wind",
   "keywords": [
     "maptalks",
@@ -10,7 +10,7 @@
     "vis",
     "gis"
   ],
-  "author": "sakitam-fdd <smilefdd@gmail.com>",
+  "author": "andy123321 <1197840434@qq.com>",
   "license": "MIT",
   "main": "dist/maptalks-wind.js",
   "module": "dist/maptalks-wind.esm.js",
@@ -49,7 +49,7 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sakitam-fdd/wind-layer.git",
+    "url": "git+https://github.com/quaner123321/wind-layer.git",
     "directory": "packages/maptalks"
   },
   "scripts": {
@@ -67,11 +67,10 @@
   "bugs": {
     "url": "https://github.com/sakitam-fdd/wind-layer/issues"
   },
-  "homepage": "https://github.com/sakitam-fdd/wind-layer#readme",
   "dependencies": {
     "@sakitam-gis/vis-engine": "^1.5.3",
     "@mapbox/geojson-rewind": "^0.5.2",
-    "wind-core": "workspace:*",
+    "wind-core": "^1.1.8",
     "wind-gl-core": "workspace:*"
   },
   "peerDependencies": {
@@ -82,5 +81,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "homepage": "https://github.com/quaner123321/wind-layer#readme"
 }

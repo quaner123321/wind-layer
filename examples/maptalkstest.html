@@ -13,29 +13,24 @@
   }
   .container {
     width: 100%;
-    height: 100%;
-    background: #0074D9;
+    height: 100%
   }
 </style>
 <body>
 
 <div id="map" class="container"></div>
 <script src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
-<script src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
 <script src="https://unpkg.com/axios/dist/axios.js"></script>
 <script src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.js"></script>
 <script src="../packages/maptalks/dist/maptalks-wind.js"></script>
-<!--<script src="https://cdn.jsdelivr.net/npm/@sakitam-gis/maptalks-wind/dist/maptalks-wind.js"></script>-->
+<!-- <script src="https://cdn.jsdelivr.net/npm/@sakitam-gis/maptalks-wind/dist/maptalks-wind.js"></script> -->
 <script>
-  const key = 'pk.eyJ1IjoidTEwaW50IiwiYSI6InQtMnZvTkEifQ.c8mhXquPE7_xoB3P4Ag8cA'
   const map = new maptalks.Map('map', {
     // center: [113.53450137499999, 34.44104525],
     zoom: 2,
     center: [34.371, 131.287].reverse(),
     // zoom: 4
     baseLayer: new maptalks.TileLayer('base', {
-      // urlTemplate: 'https://{s}.tiles.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.png?access_token=' + key,
-      // tileSize: 512,
       urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
       // urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
       subdomains: ['a', 'b', 'c', 'd'],
@@ -44,18 +39,57 @@
 
   window.map = map;
 
-  const imageSource = new mtkWind.ImageSource('wind', {
-    decodeType: mtkWind.DecodeType.imageWithExif,
-    wrapX: false,
-    coordinates: [
-      [-180, 85.051129],
-      [180, 85.051129],
-      [180, -85.051129],
-      [-180, -85.051129],
-    ],
+  // Natural Earth 海岸线数据（1:10m 比例）
+const NATURAL_EARTH_COASTLINE_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_coastline.geojson';
 
-    url: 'http://localhost:5000/2023111700/2023111703/0/0/0/wind-surface.jpeg',
-  });
+// Natural Earth 国家边界数据
+const NATURAL_EARTH_BORDERS_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_boundary_lines_land.geojson';
+
+function loadNaturalEarthData(url, layerName, style) {
+  return fetch(url)
+    .then(response => response.json())
+    .then(geoJSON => {
+      const layer = new maptalks.VectorLayer(layerName).addTo(map);
+      layer.setZIndex(1000);
+      return new Promise((resolve) => {
+        maptalks.GeoJSON.toGeometry(geoJSON, (geometries) => {
+          // geometries.forEach(geometry => {
+          //   geometry.setSymbol(style);
+          //   layer.addGeometry(geometry);
+          // });
+          geometries.setSymbol(style);
+          layer.addGeometry(geometries);
+          resolve(layer);
+        });
+      });
+    });
+}
+
+// 加载海岸线
+loadNaturalEarthData(
+  NATURAL_EARTH_COASTLINE_URL,
+  'coastline',
+  {
+    lineColor: '#ffffff',
+    lineWidth: 1.2,
+    lineOpacity: 0.7
+  }
+);
+
+// 加载国界线
+loadNaturalEarthData(
+  NATURAL_EARTH_BORDERS_URL,
+  'borders',
+  {
+    lineColor: '#ff0000',
+    lineWidth: 0.8,
+    lineOpacity: 0.5,
+    lineDasharray: [5, 3]  // 虚线
+  }
+);
+
+
+  mtkWind.configDeps(['https://unpkg.com/geotiff/dist-browser/geotiff.js']);
 
   const tileSource = new mtkWind.TileSource('wind', {
     tileSize: 256,
@@ -64,9 +98,24 @@
     roundZoom: true,
     decodeType: mtkWind.DecodeType.imageWithExif,
     wrapX: false,
-    // tileBounds: [-78.120282611, -75.191804486, 132.453327310, 68.846393966],
-    // url: 'http://localhost:5000/2023111700/2023111703/{z}/{x}/{y}/wind-surface.jpeg',
-    url: 'http://localhost:5000/tiles_final/{z}/{x}/{y}/wind-surface.jpeg',
+    url: 'http://localhost:5000/2023111700/2023111703/{z}/{x}/{y}/wind-surface.jpeg',
+  });
+
+  const imageSource22 = new mtkWind.ImageSource('wind-555', {
+    decodeType: mtkWind.DecodeType.imageWithExif,
+    coordinates: [
+      [-180, 85],
+      [180, 85],
+      [180, -85],
+      [-180, -85],
+      //[0, 85],
+      //[360, 85], .051129
+      //[360, -85],
+      //[0, -85],
+    ],
+    wrapX: true,
+    // url: 'http://localhost:5000/2023111700/2023111703/0/0/0/wind-surface.jpeg',
+    url: 'http://localhost:5000/wind_20251211_00_000_uv_3857_exact.jpg',
   });
 
   const color = {
@@ -107,7 +156,8 @@
 
   const interpolateColor = color.wind.reduce((result, item, key) => result.concat(item[0] - 0/*273.15*/, 'rgba(' + item[1].join(',') + ')'), []);
 
-  const layer = new mtkWind.Layer('wind', tileSource, {
+  const fill = new mtkWind.Layer('fill', imageSource22, {
+    wireframe: true,
     styleSpec: {
       'fill-color': [
         'interpolate',
@@ -115,33 +165,13 @@
         ['get', 'value'],
         ...interpolateColor
       ],
-      'opacity': 1,
+      'opacity': 0.6
     },
     renderFrom: mtkWind.RenderFrom.rg,
-    widthSegments: 1,
-    heightSegments: 1,
+    // widthSegments: 64,
+    // heightSegments: 64,
     displayRange: [0, 104],
     renderType: mtkWind.RenderType.colorize,
-    picking: true,
-  });
-
-  const arrow = new mtkWind.Layer('arrow', tileSource, {
-    styleSpec: {
-      'fill-color': [
-        'interpolate',
-        ['step', 1],
-        ['get', 'value'],
-        ...interpolateColor
-        // 0, '#fff',
-        // 104, '#fff',
-      ],
-      'opacity': 1,
-      space: 20,
-      size: [12, 10],
-    },
-    renderFrom: mtkWind.RenderFrom.rg,
-    displayRange: [0, 104],
-    renderType: mtkWind.RenderType.arrow,
     picking: true,
     // mask: {
     //   data: clip,
@@ -150,26 +180,7 @@
     // }
   });
 
-  // map.addLayer(layer);
-  // map.addLayer(arrow);
-
-  fetch('./data/china.geojson').then(res => res.json()).then(clip => {
-    layer.setClipMask({
-      data: clip,
-      // type: mtkWind.MaskType.outside,
-      type: mtkWind.MaskType.inside, // 默认是 inside，即只显示范围内的
-    })
-  });
-
-  const sceneConfig = {
-    postProcess: {
-      enable: true,
-      antialias: { enable: true },
-    },
-  };
-
-  const groupLayer = new maptalksgl.GroupGLLayer('group', [layer], { sceneConfig });
-  groupLayer.addTo(map);
+  map.addLayer(fill);
 </script>
 </body>
 </html>

@@ -23,7 +23,7 @@
 <script src="https://unpkg.com/axios/dist/axios.js"></script>
 <script src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.js"></script>
 <script src="../packages/maptalks/dist/maptalks-wind.js"></script>
-<!--<script src="https://cdn.jsdelivr.net/npm/@sakitam-gis/maptalks-wind/dist/maptalks-wind.js"></script>-->
+<!-- <script src="https://cdn.jsdelivr.net/npm/@sakitam-gis/maptalks-wind/dist/maptalks-wind.js"></script> -->
 <script>
   const map = new maptalks.Map('map', {
     // center: [113.53450137499999, 34.44104525],
@@ -48,8 +48,25 @@
     roundZoom: true,
     decodeType: mtkWind.DecodeType.imageWithExif,
     wrapX: false,
-    url: 'http://localhost:5000/2023111700/2023111703/{z}/{x}/{y}/wind-surface.jpeg',
+    url: 'http://192.168.2.33:5000/2023111700/2023111703/{z}/{x}/{y}/wind-surface.jpeg',
   });
+
+  const imageSource22 = new mtkWind.ImageSource('wind-555', {
+    decodeType: mtkWind.DecodeType.imageWithExif,
+    coordinates: [
+      [-180, 85.051129],
+      [180, 85.051129],
+      [180, -85.051129],
+      [-180, -85.051129],
+      // [116, 42.5],
+      //     [129, 42.5],
+      //     [129, 28.5],
+      //     [116, 28.5],
+    ],
+    wrapX: false,
+    url: 'http://192.168.2.33:5000/2023111700/2023111703/0/0/0/wind-surface.jpeg',
+  });
+
 
   const imageSource = new mtkWind.ImageSource('wind-2', {
     decodeType: mtkWind.DecodeType.imageWithExif,
@@ -58,9 +75,30 @@
       [180, 85.051129],
       [180, -85.051129],
       [-180, -85.051129],
+      // [116, 42.5],
+      //     [129, 42.5],
+      //     [129, 28.5],
+      //     [116, 28.5],
     ],
     wrapX: false,
-    url: 'http://localhost:5000/2023111700/2023111703/0/0/0/wind-surface.jpeg',
+    url: 'http://192.168.2.33:5000/2023111700/2023111703/0/0/0/wind-surface.jpeg',
+
+  });
+
+  const imageSource1 = new mtkWind.ImageSource('wind-333', {
+    decodeType: mtkWind.DecodeType.imageWithExif,
+    coordinates: [
+      // [-180, 85.051129],
+      // [180, 85.051129],
+      // [180, -85.051129],
+      // [-180, -85.051129],
+      [116, 42.5],
+          [129, 42.5],
+          [129, 28.5],
+          [116, 28.5],
+    ],
+    wrapX: false,
+    url: 'http://192.168.2.33:5000/2023111700/2023111703/0/0/0/wind-surface.jpeg',
   });
 
   const color = {
@@ -101,7 +139,7 @@
 
   const interpolateColor = color.wind.reduce((result, item, key) => result.concat(item[0] - 0/*273.15*/, 'rgba(' + item[1].join(',') + ')'), []);
 
-  const fill = new mtkWind.Layer('fill', tileSource, {
+  const fill = new mtkWind.Layer('fill', imageSource22, {
     wireframe: true,
     styleSpec: {
       'fill-color': [
@@ -110,15 +148,7 @@
         ['get', 'value'],
         ...interpolateColor
       ],
-      'opacity': [
-        'interpolate',
-        ['exponential', 1],
-        ['zoom'],
-        1,
-        1,
-        10,
-        0
-      ]
+      'opacity': 0.6
     },
     renderFrom: mtkWind.RenderFrom.rg,
     widthSegments: 64,
@@ -149,15 +179,7 @@
         0, '#fff',
         104, '#fff',
       ],
-      'opacity': [
-        'interpolate',
-        ['exponential', 0.5],
-        ['zoom'],
-        1,
-        1,
-        2,
-        1
-      ],
+      'opacity': 0.4,
       numParticles: [
         'interpolate',
         ['exponential', 0.5],
@@ -177,16 +199,68 @@
     // picking: true
   });
 
+  
+
+
+
+  const arrow = new mtkWind.Layer('arrow', imageSource1, {
+    styleSpec: {
+      
+      'opacity': 1.0,
+      space: 100,
+      size: [140, 140],
+    },
+    renderFrom: mtkWind.RenderFrom.rg,
+    displayRange: [0, 104],
+    renderType: mtkWind.RenderType.number,// arrow,   barb  number
+    lineWidthFactor: 2.0, // 新增：线宽因子，1.0为默认，越大越粗
+    picking: true,
+    // mask: {
+    //   data: clip,
+    //   // type: mapboxWind.MaskType.outside,
+    //   type: mapboxWind.MaskType.inside, // 默认是 inside，即只显示范围内的
+    // }
+  });
+
   fetch('./data/china.geojson').then(res => res.json()).then(clip => {
     // fill.setClipMask({
     //   data: clip,
     //   // type: mtkWind.MaskType.outside,
     //   type: mtkWind.MaskType.inside, // 默认是 inside，即只显示范围内的
     // })
+
+    // layer.setClipMask({
+    //   data: clip,
+    //   // type: mtkWind.MaskType.outside,
+    //   type: mtkWind.MaskType.inside, // 默认是 inside，即只显示范围内的
+    // })
+
+    // console.log(clip);
+    // const mask = maptalks.Geometry.fromJSON(clip);
+    // arrow.setMask(mask)
+
+
+    console.log(clip);
+    const features = clip.features;
+    if (features && features.length > 0) {
+        const geometry = features[0].geometry;
+        
+        // 创建正确的 JSON 结构给 fromJSON
+        const maskJson = {
+            type: geometry.type,
+            coordinates: geometry.coordinates
+        };
+        const mask = maptalks.Geometry.fromJSON(maskJson);
+        // arrow.setMask(mask);
+    }
+
+
   });
 
+  
   map.addLayer(fill);
   map.addLayer(layer);
+  map.addLayer(arrow);
 </script>
 </body>
 </html>

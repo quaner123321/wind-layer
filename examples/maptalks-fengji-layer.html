@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map - 风级可视化</title>
+<link rel="stylesheet" href="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.css">
+<link rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+<style type="text/css">
+  html, body {
+    margin: 0;
+    height: 100%;
+    width: 100%
+  }
+  .container {
+    width: 100%;
+    height: 100%
+  }
+</style>
+<body>
+
+<div id="map" class="container"></div>
+<script src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.js"></script>
+<script src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.js"></script>
+<script src="../packages/maptalks/dist/maptalks-wind.js"></script>
+<script>
+  const map = new maptalks.Map('map', {
+    zoom: 2,
+    center: [34.371, 131.287].reverse(),
+    baseLayer: new maptalks.TileLayer('base', {
+      urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      subdomains: ['a', 'b', 'c', 'd'],
+    })
+  });
+
+  window.map = map;
+
+  mtkWind.configDeps(['https://unpkg.com/geotiff/dist-browser/geotiff.js']);
+
+  const imageSource22 = new mtkWind.ImageSource('wind-555', {
+    decodeType: mtkWind.DecodeType.imageWithExif,
+    coordinates: [
+      [-180, 85.051129],
+      [180, 85.051129],
+      [180, -85.051129],
+      [-180, -85.051129],
+    ],
+    wrapX: false,
+    url: 'http://localhost:5000/2023111700/2023111703/0/0/0/wind-surface.jpeg',
+  });
+
+  // 根据你提供的风级划分，创建风级颜色映射
+  // 风级划分：
+  // 0级: 0.0-0.2
+  // 1级: 0.3-1.5
+  // 2级: 1.6-3.3
+  // 3级: 3.4-5.4
+  // 4级: 5.5-7.9
+  // 5级: 8.0-10.7
+  // 6级: 10.8-13.8
+  // 7级: 13.9-17.1
+  // 8级: 17.2-20.7
+  // 9级: 20.8-24.4
+  // 10级: 24.5-28.4
+  // 11级: 28.5-32.6
+  // 12级: 32.7-36.9
+  // 13级: 37.0-41.4
+  // 14级: 41.5-46.1
+  // 15级: 46.2-50.9
+  // 16级: 51.0-56.0
+  // 17级: 56.1-61.2
+  
+  // 创建风级颜色方案（从蓝色到红色，表示风速从低到高）
+  const beaufortColors = [
+    // 使用风速阈值和对应颜色
+    // 格式: [风速阈值(m/s), "rgba(R,G,B,A)"]
+    
+    // 0级 - 静风
+    [0.0, 'rgba(49,130,189,0.8)'],
+    
+    // 1级 - 软风
+    [0.3, 'rgba(107,174,214,0.8)'],
+    
+    // 2级 - 轻风  
+    [1.6, 'rgba(158,202,225,0.8)'],
+    
+    // 3级 - 微风
+    [3.4, 'rgba(198,219,239,0.8)'],
+    
+    // 4级 - 和风
+    [5.5, 'rgba(230,245,152,0.8)'],
+    
+    // 5级 - 清风
+    [8.0, 'rgba(254,224,139,0.8)'],
+    
+    // 6级 - 强风
+    [10.8, 'rgba(253,174,97,0.8)'],
+    
+    // 7级 - 疾风
+    [13.9, 'rgba(244,109,67,0.8)'],
+    
+    // 8级 - 大风
+    [17.2, 'rgba(215,48,39,0.8)'],
+    
+    // 9级 - 烈风
+    [20.8, 'rgba(165,15,21,0.8)'],
+    
+    // 10级 - 狂风
+    [24.5, 'rgba(151,0,73,0.8)'],
+    
+    // 11级 - 暴风
+    [28.5, 'rgba(102,37,6,0.8)'],
+    
+    // 12级 - 台风
+    [32.7, 'rgba(64,0,75,0.8)'],
+    
+    // 13级
+    [37.0, 'rgba(45,0,75,0.8)'],
+    
+    // 14级
+    [41.5, 'rgba(32,0,64,0.8)'],
+    
+    // 15级
+    [46.2, 'rgba(20,0,40,0.8)'],
+    
+    // 16级
+    [51.0, 'rgba(10,0,20,0.8)'],
+    
+    // 17级
+    [56.1, 'rgba(5,0,10,0.8)'],
+    
+    // 最大值，确保覆盖
+    [65.0, 'rgba(5,0,10,0.8)']
+  ];
+
+  // 将颜色数组扁平化
+  const beaufortInterpolate = beaufortColors.reduce((result, item) => {
+    return result.concat(item[0], item[1]);
+  }, []);
+
+  const fill = new mtkWind.Layer('fill', imageSource22, {
+    wireframe: false, // 关闭线框，让颜色更明显
+    styleSpec: {
+      'fill-color': [
+        'interpolate',
+        ['step', 1], // 使用step分段，0.1为步长，确保离散的风级划分
+        ['get', 'value'],
+        ...beaufortInterpolate
+      ],
+      'opacity': 0.8 // 增加透明度，让颜色更明显
+    },
+    renderFrom: mtkWind.RenderFrom.rg, // 使用RG通道获取风速
+    widthSegments: 128, // 增加网格密度，让渲染更精细
+    heightSegments: 128,
+    displayRange: [0, 65], // 设置显示范围0-65 m/s
+    renderType: mtkWind.RenderType.colorize,
+    picking: true,
+  });
+
+  map.addLayer(fill);
+  
+</script>
+</body>
+</html>

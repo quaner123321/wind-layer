@@ -26,6 +26,11 @@ export enum RenderType {
   barb = 4,
 
   /**
+   * 数字图
+   */
+  number = 6,
+
+  /**
    * 海浪和波
    */
   wave = 5,
